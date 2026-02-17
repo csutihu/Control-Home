@@ -156,7 +156,7 @@ Ez már nem polling dashboard, hanem valódi push-alapú kliens.
 ---
 ## 📸 Screenshot
 
-![ControlHome Screenshot](Screenshot_20260216_221609_Control Home.jpg)
+<img src="Screenshot_20260216_221609_Control Home.jpg" width="350"/>
 
 
 
