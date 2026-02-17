@@ -154,11 +154,9 @@ ControlHome jelenleg:
 Ez már nem polling dashboard, hanem valódi push-alapú kliens.
 
 ---
+## 📸 Screenshot
 
-## 📜 License
-
-Private project.
-
+![ControlHome Screenshot](Screenshot_20260216_221609_Control Home.jpg)
 
 
 
