@@ -9,6 +9,10 @@ Design principles:
 - 🎯 Optimistic UI (fast interaction feedback)
 - 🎨 Highly customizable tiles
 
+## Feedback
+
+If you find a bug or have a feature request, please open an Issue.
+
 ---
 
 # 🧭 Main Screens
