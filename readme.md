@@ -1,163 +1,152 @@
-# 📱 ControlHome
+# ControlHome
 
-A modern, minimalista, WebSocket-first Android kliens a Domoticz rendszerhez.
+## 🚀 Overview
+ControlHome is a fast, mobile-first Domoticz client designed for real-time control and high usability.
 
-ControlHome egy gyors, mobilra optimalizált, MVVM alapú Android alkalmazás, amely valós idejű (WebSocket) kommunikációval csatlakozik a Domoticz szerverhez.
-
----
-
-## 🚀 Fő jellemzők
-
-- ⚡ Cache-first betöltés (gyors indulás)
-- 🔄 WebSocket-alapú élő frissítés
-- 📱 Mobil UX optimalizálás (Favorites-first szemlélet)
-- 🧠 Egységes architektúra (Home / Favorites / Room konzisztens működés)
-- 🔌 Domoticz API kímélése (minimális polling)
-- 🧩 MVVM + StateFlow architektúra
-- 🎨 Jetpack Compose + Material 3 UI
+Built with:
+- WebSocket-first architecture
+- Cache-first startup
+- Jetpack Compose UI
 
 ---
 
-## 🏗 Architektúra
+## ✨ Key Features
 
-Az alkalmazás MVVM mintát követ:
-
-- **ViewModel**
-- **Repository**
-- **StateFlow**
-- **Unidirectional Data Flow**
-
-Kommunikáció:
-
-- REST API (Retrofit)
-- WebSocket (`/json` endpoint, `domoticz` subprotocol)
-- Snapshot + Stream modell
+### ⚡ Real-Time Updates
+- WebSocket-based global device state
+- Updates all devices regardless of screen
+- No unnecessary polling
 
 ---
 
-## 🔌 WebSocket működés
-
-### Állapotgép
-
-- `Disconnected`
-- `Connecting`
-- `Syncing`
-- `Active`
-- `RetryWait`
-- `Suspended`
-
-### ActiveGroup rendszer
-
-| Képernyő | ActiveGroup |
-|----------|------------|
-| Favorites | Favorites |
-| Room | Room(planId) |
-| Home | None |
-| Settings | None |
-
-### Snapshot + Stream modell
-
-Belépéskor:
-
-1. WebSocket connect
-2. Syncing állapot
-3. HTTP snapshot
-4. Snapshot OK → Active
-5. Ezt követően push update-ek
+### 🧠 Smart UI Architecture
+- Unified device state (global store)
+- Optimistic UI (instant feedback)
+- Automatic refresh after startup (~0.5s)
 
 ---
 
-## 🧠 Cache stratégia
+### 🎨 Linked Tile Colors
+Control one tile’s background using another device’s state.
 
-| Típus | Cache |
-|-------|-------|
-| Favorites | JSON payload cache (hash + TTL) |
-| Home | Plans + Devices cache |
-| Room | PlanID alapú cache |
+**Use cases:**
+- Garage door: trigger + real state
+- Heating: active / inactive indication
 
-TTL: 5 perc
-
----
-
-## 📂 Projekt struktúra
-
-nav/
-vm/
-repo/
-ws/
-ui/
-settings/
+**How it works:**
+- Status device (sensor)
+- Target device (tile)
+- ON/OFF → color override
 
 ---
 
-
-### Fontosabb részek
-
-- `DomoticzWebSocketManager.kt` → WS state machine
-- `DomoticzRepository.kt` → REST + cache
-- `HomeViewModel.kt` → Room WS + bulk kezelés
-- `FavoritesViewModel.kt` → Favorites WS kezelés
-- `SettingsStore.kt` → DataStore alapú beállításkezelés
-
----
-
-## 🧩 Támogatott eszköztípusok
-
-- Toggle
-- Dimmer
-- Selector
-- Thermostat
-- Sensor
-- SecurityPanel
+### 🏠 Rooms Screen
+- Swipe between rooms
+- Room header supports:
+  - Set image
+  - Set color
+  - Set default
+- Adaptive text color based on brightness
 
 ---
 
-## 🔐 Security kezelés
-
-- SecStatus váltás
-- PIN fallback
-- Pending protection (2s window)
-
----
-
-## ⚙️ Beállítások
-
-### Server Settings
-
-- Host
-- Port (dinamikus, nem fix)
-- SSL
-- Allow self-signed
-- Requires login
-- Username / Password
-
-### Background Settings
-
-- Default
-- Color
-- Image
-- Blur
-- Dim overlay
+### 🧩 Devices Screen
+- Categories:
+  - All
+  - Switches
+  - Temperatures
+  - Utilities
+  - Weather
+- Category header:
+  - Set color
+  - Set default
+  - Navigation arrows
 
 ---
 
-## 🏁 Állapot
-
-ControlHome jelenleg:
-
-- Stabil WebSocket működés
-- Partial UI update optimalizálás
-- Cache-first architektúra
-- Minimal polling
-- Mobilra optimalizált
-
-Ez már nem polling dashboard, hanem valódi push-alapú kliens.
+### 🎛 Custom Color System
+- HSV color picker
+- Opacity slider (0–100%)
+- Default ≈ 60% transparency
+- Consistent across Rooms and Devices
 
 ---
-## 📸 Screenshot
 
-<img src="Screenshot_20260216_221609_Control Home.jpg" width="350"/>
+### ⭐ Favorites
+- Fast tile-based view
+- Order from Domoticz favorites
+- Real-time updates
 
+---
 
+### ⚙️ Settings
 
+#### Server
+- Domoticz URL
+- Credentials
 
+#### Background
+- Color or image
+- Blur + dim options
+
+#### Tile Appearance
+- Tile colors (on/off/base)
+- Icon colors
+- Font sizes
+
+#### Linked Tile Colors
+- Add rules:
+  - Target device
+  - Status device
+  - Trigger value
+  - Color
+
+#### Quick Settings (QS)
+- Up to 6 tiles
+- Direct device control
+- HTTP refresh on open
+
+---
+
+## ⚡ Performance
+
+- Cache-first startup
+- < 0.5s initial UI
+- Minimal HTTP usage
+- WebSocket-driven updates
+
+---
+
+## 🧱 Architecture
+
+### Data Flow
+WebSocket → Global Store → UI
+
+### API
+- getdevices (categories)
+- getplans (rooms)
+- favorites (ordering)
+
+---
+
+## 🛠 Developer Notes
+
+- MVVM + StateFlow
+- Retrofit + OkHttp
+- Compose + Material3
+- DataStore for settings
+
+---
+
+## 🔮 Roadmap
+
+- Advanced Linked Tile conditions
+- Per-device customization
+- Tablet layout
+- UI animations
+
+---
+
+## 💬 Summary
+
+ControlHome provides a fast, flexible, and modern Domoticz experience with real-time updates and powerful UI customization.
