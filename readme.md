@@ -263,3 +263,15 @@ ControlHome is a modern Domoticz client that provides:
 - 🧠 Smart data handling
 
 It goes beyond a basic dashboard and becomes a powerful smart home control interface.
+
+## Screenshots
+
+<p align="center">
+  <a href="Screenshot_20260325_224451_Control Home.jpg"><img src="Screenshot_20260325_224451_Control Home.jpg" width="30%" /></a>
+  <a href="Screenshot_20260325_224839_Control Home.jpg"><img src="Screenshot_20260325_224839_Control Home.jpg" width="30%" /></a>
+  <a href="Screenshot_20260325_224530_Control Home.jpg"><img src="Screenshot_20260325_224530_Control Home.jpg" width="30%" /></a>
+  <a href="Screenshot_20260325_224541_Control Home.jpg"><img src="Screenshot_20260325_224541_Control Home.jpg" width="30%" /></a>
+  <a href="Screenshot_20260325_224600_Control Home.jpg"><img src="Screenshot_20260325_224600_Control Home.jpg" width="30%" /></a>
+  <a href="Screenshot_20260325_224617_Control Home.jpg"><img src="Screenshot_20260325_224617_Control Home.jpg" width="30%" /></a>
+  <a href="Screenshot_20260325_224642_Control Home.jpg"><img src="Screenshot_20260325_224642_Control Home.jpg" width="30%" /></a>
+</p>
