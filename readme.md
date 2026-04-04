@@ -401,9 +401,9 @@ Designed for further extension without breaking baseline Domoticz behavior.
 # Screenshots
 
 <p align="center">
-  <a href="Screenshot_20260325_224451_Control Home.jpg"><img src="Screenshot_20260325_224451_Control Home.jpg" width="30%" /></a>
-  <a href="Screenshot_20260325_224839_Control Home.jpg"><img src="Screenshot_20260325_224839_Control Home.jpg" width="30%" /></a>
-  <a href="Screenshot_20260325_224530_Control Home.jpg"><img src="Screenshot_20260325_224530_Control Home.jpg" width="30%" /></a>
+  <a href="Screenshot_20260405_000429_Control Home.jpg"><img src="Screenshot_20260405_000429_Control Home.jpg" width="30%" /></a>
+  <a href="Screenshot_20260405_001252_Control Home.jpg"><img src="Screenshot_20260405_001252_Control Home.jpg" width="30%" /></a>
+  <a href="Screenshot_20260405_001311_Control Home.jpg"><img src="Screenshot_20260405_001311_Control Home.jpg" width="30%" /></a>
   <a href="Screenshot_20260325_224541_Control Home.jpg"><img src="Screenshot_20260325_224541_Control Home.jpg" width="30%" /></a>
   <a href="Screenshot_20260325_224600_Control Home.jpg"><img src="Screenshot_20260325_224600_Control Home.jpg" width="30%" /></a>
   <a href="Screenshot_20260325_224617_Control Home.jpg"><img src="Screenshot_20260325_224617_Control Home.jpg" width="30%" /></a>
