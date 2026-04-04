@@ -407,5 +407,6 @@ Designed for further extension without breaking baseline Domoticz behavior.
   <a href="Screenshot_20260325_224541_Control Home.jpg"><img src="Screenshot_20260325_224541_Control Home.jpg" width="30%" /></a>
   <a href="Screenshot_20260325_224600_Control Home.jpg"><img src="Screenshot_20260325_224600_Control Home.jpg" width="30%" /></a>
   <a href="Screenshot_20260325_224617_Control Home.jpg"><img src="Screenshot_20260325_224617_Control Home.jpg" width="30%" /></a>
+  <a href="Screenshot_20260405_002320_One UI Home-EDIT.jpg"><img src="Screenshot_20260405_002320_One UI Home-EDIT.jpg" width="30%" /></a> 
   <a href="Screenshot_20260325_224642_Control Home.jpg"><img src="Screenshot_20260325_224642_Control Home.jpg" width="30%" /></a>
 </p>
