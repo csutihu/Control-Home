@@ -7,6 +7,7 @@ ControlHome is a fast, mobile-first Domoticz client focused on:
 - 🚀 Instant startup with cache-first rendering
 - 🎯 Optimistic UI for fast interaction
 - 🎨 Deep UI customization for tiles, headers, and backgrounds
+- Supports local section/separator tiles for grouping favorite devices
 
 This is **not a simple dashboard**.  
 It is a full-featured mobile control interface designed for speed, clarity, and further extension.
