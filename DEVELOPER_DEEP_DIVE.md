@@ -44,6 +44,18 @@ WS event / HTTP-only refresh / command result / fallback refresh
              Compose recomposition
 ```
 
+History flow is intentionally separate:
+
+```text
+long press on tile
+        ↓
+HistoryRepository HTTP request
+        ↓
+DeviceHistory.Chart / DeviceHistory.Log / DeviceHistory.Unsupported
+        ↓
+DeviceHistoryDialog
+```
+
 Important observation:
 - the UI should not invent device truth
 - it should render what the shared model currently says, possibly with temporary optimistic state
@@ -421,6 +433,164 @@ This is important because the app itself may not be in foreground.
 
 ---
 
+
+
+---
+
+# 📈 History Implementation Deep Dive
+
+History is now implemented as a long-press popup feature rather than a permanent tile expansion.
+
+## Main files
+
+Current implementation is centered around:
+- `HistoryRepository.kt`
+- `HistoryModels.kt`
+- `DeviceHistoryDialog.kt`
+- `TileActionsHost.kt`
+
+## Model
+
+The repository maps raw Domoticz responses into a small sealed model:
+
+```kotlin
+sealed class DeviceHistory {
+    data class Chart(...)
+    data class Log(...)
+    data class Unsupported(...)
+}
+```
+
+This keeps UI rendering independent from Domoticz's inconsistent history field names.
+
+## Long press behavior
+
+Tile long press opens the history dialog.
+
+Important behavior:
+- normal tap remains the primary control action
+- long press is reserved for details/history
+- switch, dimmer, selector and sensor tiles may all route to history where supported
+
+## Chart UI
+
+Current chart behavior:
+- Day / Month range selector
+- metric toggle rows
+- metric values with units
+- compact metric spacing
+- dynamic Y-axis recalculation based on visible metrics
+- line-end values
+- tap tooltip for selected point
+- no pinch zoom
+
+The tooltip is intentionally simple:
+- tap selects a point by X position
+- vertical marker line is drawn
+- active metric values are shown for the selected timestamp
+- tapping the same point again clears the selection
+
+## Log UI
+
+Switch and dimmer history uses event-list rendering.
+
+Current behavior:
+- simple switch history hides meaningless `0%` level values
+- dimmer history still shows meaningful non-zero percentage levels
+- user/source information is displayed where Domoticz provides it
+
+## Domoticz history endpoint mapping
+
+### Switch / Dimmer / Selector
+
+```text
+/json.htm?type=command&param=getlightlog&idx=IDX
+```
+
+Displayed as event log.
+
+### Temperature / Humidity / Pressure
+
+```text
+/json.htm?type=command&param=graph&sensor=temp&idx=IDX&range=day|month
+```
+
+Field mapping:
+- `te` → Temperature, °C
+- `hu` → Humidity, %
+- `ba` → Pressure, hPa
+- `ta` → Average
+- `tm` → Minimum
+
+### PPM / Air Quality
+
+```text
+/json.htm?type=command&param=graph&sensor=counter&idx=IDX&range=day|month
+```
+
+Field mapping:
+- `co2` → PPM, ppm
+- `v` → PPM fallback, ppm
+
+This is based on observed Domoticz behavior for Air Quality / VOC-style devices where the device displays ppm but the graph result uses `co2`.
+
+### P1 Smart Meter
+
+```text
+/json.htm?type=command&param=graph&sensor=counter&idx=IDX&range=day|month&method=1
+```
+
+Field mapping:
+- `v1 + v2` → Power input, W
+- `r1 + r2` → Power output, W
+- `eu` → Today input, kWh
+- `eg` → Today output, kWh
+- current device data → Total input / Total output
+
+Important note:
+`v1/v2` and `r1/r2` represent tariff/time-zone split data. Only one may be active in a given interval, but the app sums them to get the displayed metric.
+
+### Electricity / Solar Energy Meter
+
+```text
+/json.htm?type=command&param=graph&sensor=counter&idx=IDX&range=day|month&method=1
+```
+
+Field mapping:
+- `v` → Usage, W
+- `eu` → Today, kWh
+- current device data → Total, kWh
+
+## Default metric visibility
+
+P1 and Energy Meter metrics are visible by default.
+
+Reason:
+- the metric rows support toggling
+- units are shown
+- users can hide noisy series as needed
+
+## Scale behavior
+
+Chart scale is recalculated from active series only.
+
+Important cases:
+- if humidity is disabled, temperature gets a useful temperature-only scale
+- if large Total kWh lines are disabled, Power W becomes readable again
+- positive values do not always force a zero baseline; values far from zero get a tighter useful range
+
+## Current limitation
+
+Dual Y-axis is not implemented yet.
+
+Potential future use:
+- Temperature / Humidity
+- W / kWh
+- On/Off / %
+
+This should be treated as a chart rendering improvement, not a repository or API change.
+
+
 # ⚡ Performance Deep Dive
 
 Performance is not accidental. It comes from a few key decisions.
@@ -501,7 +671,7 @@ The current architecture already supports several next-step features well:
 - multi-server profiles
 - tablet-specific layouts
 - camera preview handling
-- history / chart rendering
+- dual-axis chart rendering for mixed-unit history views
 - additional Domoticz domains beside devices/scenes/variables
 
 The most important thing is not to break the baseline invariants while adding them.
@@ -523,3 +693,187 @@ It now has a meaningful internal architecture:
 - extensible UI override layer
 
 That makes it a strong base for continued development, provided future changes continue to respect the current architectural boundaries.
+
+
+---
+
+# 📱 Responsive Tile/Grid Deep Dive
+
+## Current Responsive Layout
+
+Current responsive column configuration:
+
+- Phone portrait → 2 columns
+- Phone landscape → 4 columns
+- Tablet portrait → 4 columns
+- Tablet landscape → 6 columns
+
+Important direction:
+- deterministic layout behavior
+- consistent visual density
+- tablet-first dashboard optimization
+
+---
+
+# 🧩 Width-Based Tile Size Evolution
+
+## Current Active Model
+
+The app now uses a width-only tile size architecture.
+
+Supported modes:
+- Default
+- 1x1
+- 2x1
+- 3x1
+- 4x1
+
+## Historical Context
+
+Double-height tile support was experimentally implemented.
+
+Problems discovered:
+- excessive whitespace
+- unstable visual density
+- inconsistent value between tile types
+- reorder-mode spacing divergence
+- tile-size-mode layout instability
+
+Architectural conclusion:
+artificial height reservation was the wrong abstraction layer.
+
+Earlier model:
+
+grid reserves height
+→ tile attempts to fill reserved space
+
+Current model:
+
+tile content defines height
+→ grid adapts naturally
+
+This dramatically improved layout consistency.
+
+---
+
+# ⭐ Favorites Section Tile System
+
+## Concept
+
+Favorites now supports local structural section tiles.
+
+Purpose:
+- visual separation of logical device groups
+- improved tablet readability
+- lightweight dashboard organization
+
+Example:
+
+[Lighting]
+Switches...
+
+[Heating]
+Thermostats...
+
+[Energy]
+P1 / inverter / utilities...
+
+## Architectural Nature
+
+Section tiles:
+- are not Domoticz devices
+- are not WS-backed
+- are not command-capable
+- are not server-synchronized
+
+They are purely local UI structure elements.
+
+## Shared Infrastructure Reuse
+
+Section tiles intentionally reuse:
+- reorder system
+- tile size system
+- visual customization system
+- adaptive contrast system
+- category-header visual language
+
+This avoided introducing a second parallel customization architecture.
+
+## Visual Design Direction
+
+Section tiles intentionally resemble Devices category header tiles.
+
+Shared characteristics:
+- larger typography
+- distinct corner radius
+- centered title
+- category-style colors
+
+Purpose:
+- visually separate structure from actionable device tiles
+- improve dashboard readability
+
+---
+
+# 🔁 Shared Reorder/Grid Evolution
+
+The reorder system evolved significantly during this phase.
+
+Earlier:
+- Favorites
+- Rooms
+- Devices
+- reorder mode
+- tile size mode
+
+all behaved slightly differently.
+
+Current shared behavior:
+- harmonized drag/drop
+- harmonized edit entry
+- shared spacing logic
+- shared tile-size behavior
+- shared tile span calculations
+
+This substantially reduced regression risk.
+
+---
+
+# 🎨 Visual Customization Expansion
+
+The app now has an increasingly unified visual customization model.
+
+Shared customization behavior now spans:
+- room headers
+- category headers
+- linked tile colors
+- section header tiles
+- tile appearance settings
+
+Common UX patterns:
+- preset colors
+- HSV customization
+- opacity support
+- adaptive contrast
+- `...` menu driven editing
+
+This consistency is becoming a major UX strength.
+
+---
+
+# 🔮 Next Likely Architectural Direction
+
+The current architecture is now well-positioned for:
+- long-press history popup overlays
+- chart rendering
+- tablet-oriented dashboards
+- richer information tiles
+
+Recent implementation outcome:
+- history popup using Domoticz HTTP history APIs
+- popup-based chart rendering instead of persistent oversized tiles
+- switch/dimmer log rendering
+- P1, Energy Meter, Temperature, Humidity, Pressure and PPM history support
+
+Likely next refinement:
+- optional dual-axis chart rendering for mixed-unit metrics

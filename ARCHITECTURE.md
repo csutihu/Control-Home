@@ -46,9 +46,10 @@ Responsibilities:
 
 Key properties:
 - Retrofit + OkHttp
-- HTTP is used for bootstrap, refresh, commands, Scenes, and User Variables
+- HTTP is used for bootstrap, refresh, commands, Scenes, User Variables, and history
 - WebSocket is used for supported real-time device domains only
 - Scenes / Groups and User Variables are **HTTP-only**
+- History is **HTTP-only** and intentionally separate from the WS runtime model
 
 ---
 
@@ -60,6 +61,7 @@ Responsibilities:
 - Apply WS patches to the current snapshot
 - Seed cache and QS state
 - Maintain extra HTTP-only collections such as Scenes and User Variables inside the same shared cache model
+- Map Domoticz history responses into chart/log models for the history popup
 
 Important rule:
 - **Repository owns the canonical ordering logic**
@@ -98,6 +100,8 @@ ViewModels currently of interest:
 - FavoritesViewModel
 - RoomsViewModel
 - DevicesViewModel
+
+History is loaded on demand from the UI action host and is deliberately not part of the normal bootstrap or WS state.
 
 Important update:
 - Favorites now merges Domoticz-favorite normal devices with Domoticz-favorite Scenes / Groups
@@ -398,6 +402,172 @@ This split is important because “UI is visible” does not automatically mean 
 
 ---
 
+
+
+---
+
+# 📈 History Architecture
+
+History is implemented as an on-demand, HTTP-only popup flow.
+
+## Entry point
+
+History is opened from device tiles by long press.
+
+Design goal:
+- keep normal tile controls fast and compact
+- avoid permanently increasing tile height
+- show detailed historical information only when requested
+
+## Data flow
+
+```text
+Tile long press
+   ↓
+TileActionsHost
+   ↓
+HistoryRepository
+   ↓
+Domoticz HTTP history endpoint
+   ↓
+DeviceHistory model
+   ↓
+DeviceHistoryDialog
+```
+
+## Supported history presentation types
+
+### Chart history
+Used for numeric metrics:
+- Temperature
+- Humidity
+- Pressure / barometer
+- PPM / CO2 / VOC-style air quality history
+- P1 Smart Meter
+- Electricity / solar energy meter
+
+### Log history
+Used for event-style devices:
+- Switch
+- Dimmer
+- Selector
+- Contact sensor, where applicable
+
+### Unsupported history
+Unsupported types are handled explicitly with a user-facing message instead of failing silently.
+
+Current unified message direction:
+- `History is not available for this device type.`
+- `History is not available for this item.`
+
+## Range support
+
+Current UI-supported ranges:
+- Day
+- Month
+
+Year view is intentionally not exposed in the mobile UI because it is less useful on phone/tablet screens.
+
+## Chart interaction
+
+Current chart behavior:
+- selectable Day / Month range
+- metric rows below the chart
+- metrics can be toggled on/off
+- chart Y range is recalculated from the currently visible metrics
+- compact metric list with units
+- line-end value display
+- tap-on-chart tooltip showing values at the selected point
+- no pinch zoom by design
+
+The current position is that pinch zoom is not worth the added complexity for this mobile control app. Deeper analysis belongs on a larger screen.
+
+## Metric mapping
+
+### Temperature / Humidity / Pressure
+
+Domoticz endpoint:
+
+```text
+/json.htm?type=command&param=graph&sensor=temp&idx=IDX&range=day|month
+```
+
+Known fields:
+- `te` → Temperature, °C
+- `hu` → Humidity, %
+- `ba` → Pressure, hPa
+- `ta` → Average temperature in aggregated views
+- `tm` → Minimum temperature in aggregated views
+
+### PPM / Air Quality
+
+Domoticz endpoint:
+
+```text
+/json.htm?type=command&param=graph&sensor=counter&idx=IDX&range=day|month
+```
+
+Known fields:
+- `co2` → PPM, ppm
+- `v` → PPM fallback, ppm
+
+This is intentionally handled as a special history mapping because Air Quality / VOC-style devices do not expose history through the same `sensor=temp` path.
+
+### P1 Smart Meter
+
+Domoticz endpoint:
+
+```text
+/json.htm?type=command&param=graph&sensor=counter&idx=IDX&range=day|month&method=1
+```
+
+Known fields:
+- `v1 + v2` → Power input, W
+- `r1 + r2` → Power output, W
+- `eu` → Today input, kWh
+- `eg` → Today output, kWh
+- current device fields → Total input / Total output
+
+Notes:
+- `v1/v2` and `r1/r2` represent tariff/time-zone split data and must be summed
+- export values may appear negative and are normalized where needed
+- all P1 metrics are visible by default and can be toggled individually
+
+### Electricity / Solar Energy Meter
+
+Domoticz endpoint:
+
+```text
+/json.htm?type=command&param=graph&sensor=counter&idx=IDX&range=day|month&method=1
+```
+
+Known fields:
+- `v` → Usage, W
+- `eu` → Today, kWh
+- current device field → Total, kWh
+
+All energy meter metrics are visible by default and can be toggled individually.
+
+## Chart scale rule
+
+The Y-axis is calculated dynamically from visible series.
+
+Important behavior:
+- disabling a metric recalculates the visible range
+- values near zero may anchor to zero
+- values far from zero use a tighter range so small changes remain visible
+- this is important for examples such as 20–22 °C temperature or mixed humidity/temperature charts
+
+## Future optional improvement
+
+A dual Y-axis may be useful later for:
+- °C / %
+- W / kWh
+- on-off / %
+
+This was intentionally not implemented yet because the current toggle + dynamic-scale approach is already usable.
+
+
 # ⚡ Performance Strategy
 
 Performance is based on a few deliberate principles:
@@ -469,7 +639,7 @@ Good candidates:
 - richer linked tile conditions
 - device-level visual customization
 - camera preview surfaces
-- history / chart views
+- dual-axis chart rendering for selected mixed-unit history views
 
 Important rule for extending:
 - protect the invariants:
@@ -494,3 +664,103 @@ ControlHome currently stands on a solid architectural foundation because it now 
 - UI-only override architecture for advanced visual features
 
 That combination makes the app both fast today and realistically extensible tomorrow.
+
+
+---
+
+# 📱 Responsive Grid Architecture
+
+## Current Layout Strategy
+
+The tile grid system now uses explicit responsive column counts.
+
+Current configuration:
+- phone portrait → 2 columns
+- phone landscape → 4 columns
+- tablet portrait → 4 columns
+- tablet landscape → 6 columns
+
+Important design direction:
+- deterministic layouts
+- no runtime auto-density logic
+- current UX direction avoids exposing manual grid tuning in settings
+
+---
+
+# 🧩 Tile Size Architecture
+
+Favorites, Rooms, and Devices now share a unified width-based tile size override system.
+
+Supported modes:
+- Default
+- 1x1
+- 2x1
+- 3x1
+- 4x1
+
+Important architectural decision:
+- width-only resizing is the active architecture
+- tile height is now primarily content-driven
+- earlier double-height reservation logic was intentionally removed
+
+Reason:
+the previous height-reservation approach caused:
+- spacing instability
+- wasted vertical space
+- reorder-mode inconsistencies
+- tile-size-mode inconsistencies
+
+Current direction:
+- tile content defines height
+- grid adapts naturally
+- width overrides remain explicit UI metadata
+
+---
+
+# ⭐ Favorites Section Tile Architecture
+
+Favorites now supports local section header tiles.
+
+These tiles are:
+- application-owned UI elements
+- not mapped to Domoticz entities
+- persisted locally in SettingsStore
+- merged into Favorites rendering order
+
+Purpose:
+- lightweight visual grouping
+- improved tablet readability
+- dashboard structure without hierarchy
+
+Important constraints:
+- no WS participation
+- no Domoticz synchronization
+- no command behavior
+- no backend persistence
+
+Shared infrastructure reuse:
+- reorder system
+- tile size system
+- visual customization system
+- adaptive contrast system
+- category-header visual language
+
+---
+
+# 🔁 Shared Reorder/Grid Infrastructure
+
+The reorder system evolved into a shared infrastructure layer.
+
+Shared capabilities:
+- reorder mode
+- tile size mode
+- local UI tiles
+- harmonized edit controls
+- shared spacing calculations
+
+Important debugging outcome:
+many earlier spacing problems were caused by:
+- hidden height reservation logic
+- inconsistent grid spacing rules between edit modes
+
+The current implementation is significantly more stable.
