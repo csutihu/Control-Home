@@ -565,3 +565,30 @@ Favorites, Rooms, and Devices now share:
 - drag/drop infrastructure
 
 This significantly reduced layout divergence between screens and edit modes.
+
+---
+
+# 🖼 Pictures
+
+The screenshots below are shown in filename creation order. Click any picture to open it in full size.
+
+<table>
+  <tr>
+    <td><a href="Screenshot_20260325_224541_Control%20Home.jpg"><img src="Screenshot_20260325_224541_Control%20Home.jpg" width="180" alt="ControlHome screenshot 1"></a></td>
+    <td><a href="Screenshot_20260325_224600_Control%20Home.jpg"><img src="Screenshot_20260325_224600_Control%20Home.jpg" width="180" alt="ControlHome screenshot 2"></a></td>
+    <td><a href="Screenshot_20260325_224617_Control%20Home.jpg"><img src="Screenshot_20260325_224617_Control%20Home.jpg" width="180" alt="ControlHome screenshot 3"></a></td>
+    <td><a href="Screenshot_20260325_224642_Control%20Home.jpg"><img src="Screenshot_20260325_224642_Control%20Home.jpg" width="180" alt="ControlHome screenshot 4"></a></td>
+  </tr>
+  <tr>
+    <td><a href="Screenshot_20260405_000429_Control%20Home.jpg"><img src="Screenshot_20260405_000429_Control%20Home.jpg" width="180" alt="ControlHome screenshot 5"></a></td>
+    <td><a href="Screenshot_20260405_001252_Control%20Home.jpg"><img src="Screenshot_20260405_001252_Control%20Home.jpg" width="180" alt="ControlHome screenshot 6"></a></td>
+    <td><a href="Screenshot_20260405_001311_Control%20Home.jpg"><img src="Screenshot_20260405_001311_Control%20Home.jpg" width="180" alt="ControlHome screenshot 7"></a></td>
+    <td><a href="Screenshot_20260405_002320_One%20UI%20Home-EDIT.jpg"><img src="Screenshot_20260405_002320_One%20UI%20Home-EDIT.jpg" width="180" alt="ControlHome screenshot 8"></a></td>
+  </tr>
+  <tr>
+    <td><a href="Screenshot_20260606_201115_Control%20Home.jpg"><img src="Screenshot_20260606_201115_Control%20Home.jpg" width="180" alt="ControlHome screenshot 9"></a></td>
+    <td><a href="Screenshot_20260606_201238_Control%20Home.jpg"><img src="Screenshot_20260606_201238_Control%20Home.jpg" width="180" alt="ControlHome screenshot 10"></a></td>
+    <td><a href="Screenshot_20260606_201300_Control%20Home.jpg"><img src="Screenshot_20260606_201300_Control%20Home.jpg" width="180" alt="ControlHome screenshot 11"></a></td>
+    <td><a href="Screenshot_20260606_201328_Control%20Home.jpg"><img src="Screenshot_20260606_201328_Control%20Home.jpg" width="180" alt="ControlHome screenshot 12"></a></td>
+  </tr>
+</table>
