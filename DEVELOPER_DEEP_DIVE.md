@@ -399,10 +399,95 @@ These are not the same thing and should not be flattened into one generic error.
 ## Implemented direction
 - Password missing → navigate to Server Settings and explain re-entry
 - Unauthorized → navigate to Server Settings and explain credential failure
-- Server unavailable → navigate to Server Settings and explain server/network issue
+- Server unavailable without usable cache → navigate to Server Settings and explain server/network issue
+- Server unavailable with usable cache → keep cached UI visible and show the offline cache banner
+- Failed device commands caused by connection loss → mark the shared connection state unavailable instead of opening Server Settings directly
 
 ## Why this matters
-The app is cache-first, so “UI visible” does not automatically mean “connection healthy”.
+The app is cache-first, so “UI visible” does not automatically mean “connection healthy”.  
+Cached UI may intentionally remain visible while the shared recovery coordinator probes the server in the background.
+
+---
+
+# 🌐 Connection Recovery Deep Dive
+
+The current connection handling is centered around `ConnectionRecoveryCoordinator`.
+
+## Why it exists
+
+Earlier behavior allowed separate screens to trigger Server Settings independently.  
+This caused inconsistent UX between Favorites, Rooms and Devices.
+
+Current goal:
+- one active server connection model
+- one recovery path
+- one offline/cache state
+- no screen-specific Server Settings jumps for normal command failures
+
+## Main states
+
+```kotlin
+sealed interface ConnectionRecoveryState {
+    data object Idle
+    data class Recovering(val hasCachedData: Boolean)
+    data object Online
+    data class Unavailable(
+        val issue: AppConnectionIssue,
+        val failureId: Long,
+        val hasCachedData: Boolean
+    )
+}
+```
+
+## Full recovery
+
+Used for:
+- startup
+- foreground return
+- manual Retry
+- Settings Done
+
+Retry schedule:
+- 0 ms
+- 400 ms
+- 800 ms
+- 1200 ms
+
+Implementation note:
+the recovery path first publishes cached bootstrap data when available, then performs short server probes before doing a full refresh.
+
+## Quiet offline probe
+
+Used while the offline cache banner is visible.
+
+Important behavior:
+- performs only one quick probe
+- does not set `Recovering`
+- does not clear the banner on failure
+- does not emit a new failure state on failure
+- only moves to `Online` after successful probe + refresh
+
+This prevents the offline banner from blinking during repeated background retries.
+
+## Offline banner
+
+`OfflineCacheBanner` is the shared UI representation for cached/offline mode.
+
+Current actions:
+- `Retry` → explicit full recovery
+- `Settings` → open Server Settings
+
+## Command errors
+
+`rememberCommandErrorSnackbar` classifies command errors.
+
+Connection-type errors:
+- are forwarded to the coordinator
+- activate shared offline/cache state
+- do not directly open Server Settings
+
+Non-connection errors:
+- remain Snackbar messages
 
 ---
 
@@ -678,6 +763,24 @@ The most important thing is not to break the baseline invariants while adding th
 
 ---
 
+
+# 📦 Play Store Publishing / Release Guidance
+
+For Play distribution:
+- generate a signed Android App Bundle (`.aab`)
+- keep the GitHub APK for direct testing if desired
+- use internal testing first
+- use closed testing before production if required by the developer account type
+
+Release metadata should clearly state:
+- the app connects to a user-provided Domoticz server
+- there is no ControlHome cloud backend
+- credentials stay on the device
+- the only normal Android permission in the manifest is Internet access
+
+Donation/support handling:
+- avoid in-app PayPal or donation prompts in the Play-distributed app
+- if project support is desired, place it on GitHub rather than inside the app
 # ✅ Developer Summary
 
 ControlHome is no longer a simple collection of screens.  
@@ -836,6 +939,21 @@ Current shared behavior:
 - shared tile span calculations
 
 This substantially reduced regression risk.
+
+## Reorder input stabilization
+
+Switch and dimmer tiles contain their own interactive input handlers.  
+Dimmer tiles also contain a slider.
+
+During reorder mode, those inner handlers must not compete with the grid drag gesture.
+
+Current implementation:
+- `ReorderDeviceGrid` renders the normal tile for appearance
+- reorder mode places a transparent touch layer above the tile
+- that layer owns `detectDragGesturesAfterLongPress`
+- inner tile actions are replaced with no-op actions while reordering
+
+This makes switch/dimmer drag behavior consistent with selector, sensor, thermostat and P1 tiles.
 
 ---
 

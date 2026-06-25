@@ -395,10 +395,14 @@ Current app-state model distinguishes:
 Implemented UX direction:
 - Password missing → navigate to Server Settings
 - Unauthorized → navigate to Server Settings
-- Server unavailable → navigate to Server Settings with clear message
-- Cache-first startup remains important for perceived continuity
+- Server unavailable with no usable cache → navigate to Server Settings with clear message
+- Server unavailable with usable cache → keep the current UI visible and show the offline cache banner
+- Offline cached mode provides `Retry` and `Settings` actions
+- Automatic offline probing is quiet and does not hide the banner while checking
+- Command failures caused by connection loss are represented by the shared offline state, not by immediate Settings navigation
 
-This split is important because “UI is visible” does not automatically mean “current connection is healthy”.
+This split is important because “UI is visible” does not automatically mean “current connection is healthy”.  
+The UI can intentionally remain visible in cached/offline mode while the connection coordinator probes for recovery.
 
 ---
 
@@ -568,6 +572,74 @@ A dual Y-axis may be useful later for:
 This was intentionally not implemented yet because the current toggle + dynamic-scale approach is already usable.
 
 
+
+# 🌐 Connection Recovery Architecture
+
+Connection recovery is now centralized.
+
+Main component:
+- `ConnectionRecoveryCoordinator`
+
+Shared state:
+- `Idle`
+- `Recovering`
+- `Online`
+- `Unavailable(issue, failureId, hasCachedData)`
+
+## Purpose
+
+The coordinator prevents Favorites, Rooms, and Devices from implementing separate server-check and settings-navigation behavior.
+
+Important architecture decision:
+- main screens do not directly navigate to Server Settings from generic device command errors
+- they report connection-type failures to the coordinator
+- the coordinator owns offline/cache state
+- `NavGraph` owns the final global UI reaction
+
+## Startup / foreground recovery
+
+The full recovery cycle is used for:
+- app startup
+- foreground return
+- Server Settings `Done`
+- explicit `Retry`
+
+The quick retry schedule is:
+- 0 ms
+- 400 ms
+- 800 ms
+- 1200 ms
+
+Each probe is intentionally short.
+
+If a probe succeeds:
+- fresh bootstrap data is refreshed and cached
+- the coordinator moves to `Online`
+
+If all probes fail:
+- with cache → `Unavailable(..., hasCachedData = true)`
+- without cache → `Unavailable(..., hasCachedData = false)` and Settings can be opened
+
+## Offline cached mode
+
+When cache exists and the server is unavailable:
+- the app keeps cached UI visible
+- `OfflineCacheBanner` is shown
+- the banner exposes `Retry` and `Settings`
+
+Automatic background retry uses a separate quiet method:
+- `probeWhileOffline()`
+
+Important rule:
+- quiet probes must not change the visible state on failure
+- the banner must remain stable and must not blink
+- only successful probe + refresh transitions to `Online`
+
+## Shared repository relationship
+
+Favorites, Rooms, and Devices now operate on the same repository foundation for the active server connection.
+
+This avoids the previous divergence where one screen could think the server was unavailable while another screen still displayed cached or refreshed content.
 # ⚡ Performance Strategy
 
 Performance is based on a few deliberate principles:
@@ -651,6 +723,20 @@ Important rule for extending:
 
 ---
 
+
+# 📦 Release / Store Readiness Notes
+
+Current public-distribution direction:
+- GitHub is the primary project/documentation location
+- Google Play distribution should start with internal or closed testing
+- production release should follow after real-world testing
+- Play release should use Android App Bundle (`.aab`)
+
+Policy-sensitive design direction:
+- keep the Play-distributed app free
+- avoid in-app PayPal/donation prompts
+- keep project support/donation links outside the app, preferably in GitHub documentation
+- describe clearly that ControlHome connects only to the user-configured Domoticz server and does not operate a cloud backend
 # ✅ Architectural Summary
 
 ControlHome currently stands on a solid architectural foundation because it now has:
@@ -764,3 +850,19 @@ many earlier spacing problems were caused by:
 - inconsistent grid spacing rules between edit modes
 
 The current implementation is significantly more stable.
+
+## Reorder input capture
+
+Reorder mode now uses a transparent drag-capture layer over each tile.
+
+Reason:
+- switch and dimmer tiles contain interactive touch handlers
+- dimmer tiles contain a slider
+- those inner controls can otherwise consume or cancel long-press drag gestures
+
+Current rule:
+- in reorder mode, the grid-level drag layer owns touch input
+- tile controls are effectively passive
+- normal tap, long-press history and slider behavior remain unchanged outside reorder mode
+
+This makes switch/dimmer reorder behavior consistent with selector, sensor, thermostat and P1 tiles.

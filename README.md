@@ -7,6 +7,8 @@ ControlHome is a fast, mobile-first Domoticz client focused on:
 - 🚀 Instant startup with cache-first rendering
 - 🎯 Optimistic UI for fast interaction
 - 🎨 Deep UI customization for tiles, headers, and backgrounds
+- 🌐 Unified connection recovery with offline cache banner
+- 🔁 Shared reorder and tile-size infrastructure across Favorites, Rooms, and Devices
 - Supports local section/separator tiles for grouping favorite devices
 
 This is **not a simple dashboard**.  
@@ -400,6 +402,55 @@ These are merged into the app model without pretending they are WS-backed.
 
 ---
 
+# 🌐 Connection Recovery & Offline Cache
+
+ControlHome now uses a shared connection recovery model across Favorites, Rooms, and Devices.
+
+## Startup / foreground recovery
+
+When the app starts or returns from background:
+
+```text
+cached snapshot
+   ↓
+immediate UI render, if available
+   ↓
+central connection probe/recovery
+   ↓
+fresh bootstrap refresh when server is available
+```
+
+The recovery cycle uses a short retry sequence:
+- 0 ms
+- 400 ms
+- 800 ms
+- 1200 ms
+
+Each probe has a short timeout so an unavailable LAN/server does not block the UI for a long time.
+
+## Offline cached mode
+
+If the server is not reachable but cached content exists:
+- the main screen stays visible
+- an `Offline - cached data` banner is shown
+- `Retry` starts an explicit recovery attempt
+- `Settings` opens Server Settings
+- a quiet automatic probe runs in the background
+
+The automatic probe does not hide the banner while checking.  
+This prevents UI blinking during offline periods.
+
+## Command failure handling
+
+If a command fails because the server is unavailable:
+- the app does not immediately navigate to Server Settings
+- the shared offline/cache state is activated
+- cached UI remains visible where possible
+
+This keeps transient Wi-Fi or Domoticz restart issues from disrupting normal app navigation.
+
+---
+
 # 🔐 Security & Storage
 
 ## SecretStore
@@ -425,13 +476,19 @@ These are merged into the app model without pretending they are WS-backed.
 - Shows authentication error message
 
 ## Server Not Available / Offline
-- Redirects to Server Settings when the app determines the server is unavailable
-- Cache-first behavior still remains important for perceived continuity
+- Startup and foreground recovery are coordinated centrally
+- Existing cached data remains visible when possible
+- If cache is available, the app shows an `Offline - cached data` banner instead of immediately forcing Server Settings
+- The banner provides `Retry` and `Settings` actions
+- Automatic offline retry uses a quiet single-probe loop so the banner stays stable and does not blink
+- If no usable cache exists, repeated failed recovery can still navigate to Server Settings with a clear explanation
+- A failed switch/dimmer/selector command does not automatically open Server Settings; the connection state is represented by the shared offline banner
 
 ## Current development status
 - Broken encrypted prefs crash is fixed
 - Missing password and unauthorized flows are implemented
-- Server unavailability handling is integrated with Settings navigation
+- Server unavailability is handled through the shared connection recovery coordinator
+- Offline cached operation is supported with a stable banner and silent background probes
 
 ---
 
@@ -567,7 +624,39 @@ Favorites, Rooms, and Devices now share:
 
 This significantly reduced layout divergence between screens and edit modes.
 
+## Reorder touch handling
+
+Reorder mode now places a transparent drag layer over each tile.
+
+Reason:
+- switch tiles and dimmer tiles have their own interactive touch handling
+- dimmers also contain slider interaction
+- those inner gestures can cancel grid drag if they receive touches during reorder mode
+
+Current behavior:
+- reorder mode captures tile touch at the grid layer
+- inner switch/dimmer/slider controls are passive while reordering
+- normal tile interaction is unchanged outside reorder mode
+- switch and dimmer reorder now behaves like selector/sensor/P1 tiles
+
 ---
+
+---
+
+# 📦 Play Store Publishing Notes
+
+ControlHome is planned as a free app.
+
+Recommended distribution path:
+- GitHub remains the public project and issue/support location
+- Google Play should start with internal or closed testing
+- production release should follow after real-world testing
+- the app should be uploaded to Play as an Android App Bundle (`.aab`), not as a standalone APK
+
+Donation/support recommendation:
+- keep the Play-distributed app free and without in-app donation buttons
+- if project support is desired, use a `Support the project` section on GitHub instead of putting a PayPal donation flow inside the app
+
 
 # 🖼 Pictures
 
